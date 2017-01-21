@@ -22,10 +22,3 @@ The process
 7. Develop code
 8. Test 
 9. Implement solution
-
-
-
-
-
-
-
