@@ -34,8 +34,8 @@ Thank you!
 # I don't know how to make the "C:/Users/Pedro Franco..." automoatic, so that you don't have to change this everytime we run it or change the user running it
 # Below we are just organizing the data so that we have 
 
-NYPD_table = "Data/NYPD_Motor_Vehicle_Collisions_Official_1.csv"
-ProjectData <- read.csv("Data/NYPD_Motor_Vehicle_Collisions_Official_1.csv")
+NYPD_table = "Data/NYPD_Motor_Vehicle_Collisions_Official_2016"
+ProjectData <- read.csv("Data/NYPD_Motor_Vehicle_Collisions_Official_2016")
 ProjectData <- data.matrix(ProjectData)
 ProjectData_INITIAL <- ProjectData
 

@@ -75,7 +75,7 @@ Please find below a breif description of the columns:
 22. CONTRIBUTING.FACTOR.VEHICLE.4 (Plain text)
 23. CONTRIBUTING.FACTOR.VEHICLE.5 (Plain text)
 24. UNIQUE.KEY  (Number #) - Unique key for the table                 
-25. VEHICLE.TYPE.CODE.1 (Plain text) - Type of Vehicle 1 (sports utility, taxi, passenger, bus, etc)         
+25. VEHICLE.TYPE.CODE.1 (Plain text) - Type of Vehicle 1 (sports utility, taxi, passenger, bus, etc)        
 26. VEHICLE.TYPE.CODE.2 (Plain text)          
 27. VEHICLE.TYPE.CODE.3 (Plain text)         
 28. VEHICLE.TYPE.CODE.4 (Plain text)          
