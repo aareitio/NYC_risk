@@ -33,6 +33,7 @@ rm(list = ls())
 
 # load the dataset for the project
 NYPDfile <- read.csv("NYPD_Motor_Vehicle_Collisions_2016.CSV")
+correlation_columns <- 3:4
 
 # load required packages
 # install required packages if loading failed
@@ -40,8 +41,13 @@ NYPDfile <- read.csv("NYPD_Motor_Vehicle_Collisions_2016.CSV")
 #---source("./library.R")
 #---install_load("ggplot2", "corrplot", "caret", "C50", "cwhmisc", "stringr", "gmodels")
 
+
+column_sample <- head(NYPDfile[, correlation_columns])
+knitr::kable(t(column_sample))
+
 head(NYPDfile, n = 5)
 tail(NYPDfile, n = 5)
+
 
 ```
 
