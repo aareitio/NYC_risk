@@ -35,7 +35,7 @@ Thank you!
 # Below we are just organizing the data so that we have 
 
 ```{r setup, echo=FALSE, message=FALSE}
-ProjectData <- read.csv("data/NYPD_Motor_Vehicle_Collisions_Official_2016.csv", header = TRUE, sep=";")
+ProjectData <- read.csv("NYPD_Motor_Vehicle_Collisions_2016.csv", header = TRUE, sep=";")
 correlation_columns <- 3:6
 ```
 
@@ -278,12 +278,14 @@ For example, in our case we can see the histogram of, say, the first 2 variables
 
 or the histogram of all pairwise distances for the "r distance_used" distance:
 
+
+
 ```{r}
 #----Pairwise_Distances <- dist(ProjectData_segment, method = distance_used) 
 #----qplot(as.vector(Pairwise_Distances), xlab="Histogram of all pairwise Distances between observtions", ylab="Frequency", binwidth=1)
 ```
 
-> Visualization is very important for data analytics, as it can provide a first understanding of the data.
+Visualization is very important for data analytics, as it can provide a first understanding of the data.
 
 ## Step 6: Method and Number of Segments
 
