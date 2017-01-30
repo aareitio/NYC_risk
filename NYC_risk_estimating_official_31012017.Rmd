@@ -1,0 +1,659 @@
+---
+title: "Measuring Risk in NYC"
+author: Andy Areitio, Claudia Kampbel, Pedro B Franco (INSEAD MBA Class of July 2017);
+  Jorge Bravo
+date: "January 31, 2017"
+output:
+  html_document:
+    css: Styles/default.css
+    theme: paper
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: yes
+---
+
+# Project Objective:
+
+We intend to analyze and identify patterns regarding car accidents in New York City ("NYC"). In order to acheive this objective we have obtained from the New York Police Department ("NYPD") open source data about accidents since January 7th, 2012. The table has 29 columns containing details on each accident reported to the NYPD.
+
+Disclaimer: Please note that in order to run this project on a local computer, you will have do download a CSV file from the NYPD web site and name it as follows: 
+
+..Data/NYPD_Motor_Vehicle_Collisions.csv
+
+Link for download:
+https://data.cityofnewyork.us/Public-Safety/NYPD-Motor-Vehicle-Collisions/h9gi-nx95
+
+Thank you!
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+# basic preparatory commands
+
+# clear the working environment
+rm(list = ls())
+
+# load the dataset for the project
+NYPDfile <- read.csv("Data/NYPD_Motor_Vehicle_Collisions.csv", header = TRUE, stringsAsFactors = FALSE)
+
+
+#####
+
+# load required packages
+# install required packages if loading failed
+# all packages sould be listed inside install_load()
+if (!require("ggplot2")) {
+  install.packages("ggplot2", repos="http://cran.rstudio.com/") 
+  library("ggplot2")
+}
+if (!require("qcc")) {
+  install.packages("qcc", repos="http://cran.rstudio.com/") 
+  library("qcc")
+}
+
+###
+
+```
+
+
+## Project process and document structure
+
+Please find below the process we have used to solve the proposed business problem:
+
+**1. Defining business problem.** 
+
+As described above, our intentions are to analyze and identify patterns concerning car accidents in the city of New York. We intend to draw some conclusions from the data and generate some visualizations of the data.
+
+**2. Find data.** 
+
+Find a good and reliable source of data. We are using official data from the Police Department of the City of New York. This data is publicly available and trustworthy. However, as we will see in the course of the analysis, there are some challenges with the data quality (e.g., non-numeric columns, missing information). We believe however, that the data gives us a good first understanding of the situation. For this project, we will therefore focus on analyzing what is available. 
+A good next step after the project could be exploring ways to complement the data, e.g., by converting the non-numeric columns into numeric data and by extrapolating data from other sources to fill data gaps. 
+
+**3. Understand the data.** 
+
+It is important to understand the data we have at hand before trying to manipulate it. We will describe the columns on the tables as a part of this process.
+Depending on our findings we may have to prepare the data set for modeling:
+
++ Check for missing values, exclusion of corresponding observations.
++ Check for outliers, decision on their participation in analysis.
++ Conversion of non-numerical attributes to numerical dummy variables.
+
+Part of understanding the data will involve the following
+
+i.	Analyze data quantitatively (how many zip.codes we have, for example)
+
+ii.	Number of people who die/are injured in accidents
+
+Visualizing the data will also be part of this stage, where will try to check if we can see any of the following trends:
+
+i.	Boroughs (or ZIP codes) with most accidents
+ii. Boroughs (or ZIP codes) with most deaths
+iii. Boroughs (or ZIP codes) with most injuries
+iv. Histograms with the most frequent type of accident (type = # injuries or deaths) 
+v. Histograms with accidents per borough
+
+**4. Define business criteria.**  
+
+We will have to define the following:
+
++ Method for rating the accidents (i.e., rows). For this, we defined *URS* - an Universal Rating System (for accidents)
++ Criteria for dangerous zip codes (scaling URS)
+
+**5. Prepare and model solution.**
+
++ Choose the columns/criteria that are most relevant for the analysis (dimensionality reduction)
++ Develop logic/workflow
++ Develop code
+
+**6. Summarize findings and define next steps.** Test the solution and conclude the project. Conclude the project and add comments on how to improve the solution.
+
+# 1. Business Understanding
+
+We will focus on analyzing the risk from traffic accidents in NY city by boroughs and ZIP codes (lateron, an analysis by streets could be added). We plan to deploy our analysis and conclusions. These provide a base that could be used in the future by insurance companies, people looking for locations to buy houses in NYC, tourists looking for safest routes for walks, or even for waze-type platforms that could define their routes based on safety.
+
+# 2. /3. Data Understanding
+
+## Source of data
+
+We have downloaded open source data from the following site:
+(https://data.cityofnewyork.us/Public-Safety/NYPD-Motor-Vehicle-Collisions/h9gi-nx95).
+
+## Dataset size and variables
+
+Each line of the table represents an incident involving a motor car vehicle in NYC since January 7th 2012.
+
+Please find below a brief description of the columns:
+
+1. DATE (Floating Time Stamp) - Date of the incident
+
+2. TIME (Text) - Time the incident occured
+
+3. BOROUGH (Text) - The Bourough the accident occured
+
+4. ZIP.CODE (Text) - The Zipcode of the location
+
+5. LATITUDE (Number #) - Latitude of the location the accident occured
+
+6. LONGITUDE (Number #) - Longitude of the location the accident occured
+
+7. LOCATION (Location Datatype) - Location, where logitude and latitude are joined and can be refferenced to a map
+
+8. ON.STREET.NAME (Plain text) - Name of the street the accident occured                
+
+9. CROSS.STREET.NAME (Plain text) - Closest cross street           
+
+10. OFF.STREET.NAME (Plain text)               
+
+11. NUMBER.OF.PERSONS.INJURED (Number #)    
+
+12. NUMBER.OF.PERSONS.KILLED (Number #)     
+
+13. NUMBER.OF.PEDESTRIANS.INJURED (Number #)
+
+14. NUMBER.OF.PEDESTRIANS.KILLED (Number #)  
+
+15. NUMBER.OF.CYCLIST.INJURED (Number #)  
+
+16. NUMBER.OF.CYCLIST.KILLED (Number #)    
+
+17. NUMBER.OF.MOTORIST.INJURED (Number #)  
+
+18. NUMBER.OF.MOTORIST.KILLED (Number #)   
+
+19. CONTRIBUTING.FACTOR.VEHICLE.1 (Plain text) - Main factor which caused the accident (Driver Inexperience, Driver Inattention, Turning Improperly, etc...)
+
+20. CONTRIBUTING.FACTOR.VEHICLE.2 (Plain text)
+
+21. CONTRIBUTING.FACTOR.VEHICLE.3 (Plain text)
+
+22. CONTRIBUTING.FACTOR.VEHICLE.4 (Plain text)
+
+23. CONTRIBUTING.FACTOR.VEHICLE.5 (Plain text)
+
+24. UNIQUE.KEY  (Number #) 
+
+25. VEHICLE.TYPE.CODE.1 (Plain text) - Type of Vehicle 1 (sports utility, taxi, passenger, bus, etc)         
+
+26. VEHICLE.TYPE.CODE.2 (Plain text)          
+
+27. VEHICLE.TYPE.CODE.3 (Plain text)         
+
+28. VEHICLE.TYPE.CODE.4 (Plain text)          
+
+29. VEHICLE.TYPE.CODE.5 (Plain text)    
+
+First, let's generate a summary report for all variables.
+
+Below is the summary of the project dataset structure.
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+
+#colnames(NYPDfile)
+nrow(NYPDfile)
+ncol(NYPDfile)
+summary(NYPDfile)
+```
+
+Note: 'Date' and 'Time' columns are defined as characters and not numerical. 
+These variables are not key to our primary analysis (assessing the risk of having an accident in a specified ZIP code/borough) so we will focus on the remaining variables.
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+
+#analyzing categorical variables and unique values
+sapply(NYPDfile, function(x) length(unique(x)))
+
+
+ #Nb of NAs
+sum(is.na(NYPDfile)) 
+```
+
+Also, the summary shows that there are some missing values in certain columns (e.g., borough) which could be difficult to use. We will take a deeper look to find out more.
+Let's start by the Borough and Zipcode:
+
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+
+#zooming in one column
+aggregate(data.frame(count = NYPDfile$BOROUGH), list(value = NYPDfile$BOROUGH), length)
+```
+ 
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+
+# Number of accidents without ZipCode
+sum(is.na(NYPDfile$ZIP.CODE)) 
+
+# In fact, with no Borough there is no zipcode (nb)
+length(NYPDfile$BOROUGH[NYPDfile$"BOROUGH"=="" & NYPDfile$"ZIP.CODE"==""])
+
+#https://www.gaslampmedia.com/download-zip-code-latitude-longitude-city-state-county-csv/
+  
+
+```
+
+This number represents `r round(length(NYPDfile$BOROUGH[NYPDfile$"BOROUGH"=="" & NYPDfile$"ZIP.CODE"==""])/length(NYPDfile$BOROUGH),2)*100`% of the total data. 
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+NYPD_noBorough <- subset(NYPDfile, BOROUGH=="")
+sum(NYPD_noBorough$NUMBER.OF.PERSONS.INJURED)
+sum(NYPD_noBorough$NUMBER.OF.PERSONS.KILLED)
+
+sum(NYPD_noBorough$NUMBER.OF.PERSONS.INJURED)/sum(NYPDfile$NUMBER.OF.PERSONS.INJURED)
+sum(NYPD_noBorough$NUMBER.OF.PERSONS.KILLED)/sum(NYPDfile$NUMBER.OF.PERSONS.KILLED)
+
+
+
+#sum(NYPDfile$NUMBER.OF.PERSONS.INJURED[NYPDfile$"BOROUGH"=="" & NYPDfile$"ZIP.CODE"==""])
+
+#HR.stayed <- subset(HR, left == 0)
+
+```
+
+In a first step, we replace the empty cells in the columns Borough (ZIP code) with "UNSPECIFIED" (00000).
+
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+
+
+NYPDfile$BOROUGH[NYPDfile$BOROUGH == ""] <- "UNSPECIFIED"
+NYPDfile$ZIP.CODE[is.na(NYPDfile$ZIP.CODE)] <- "00000"
+
+
+#histogram
+
+NYPDdata <- NYPDfile$UNIQUE.KEY
+NYPDdata <- cbind(NYPDdata, NYPDfile$BOROUGH)
+colnames(NYPDdata) <- c("ID", "BOROUGH")
+
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="UNSPECIFIED", 0)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="BRONX", 1)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="BROOKLYN", 2)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="MANHATTAN", 3)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="QUEENS", 4)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="STATEN ISLAND", 5)
+
+NYPDdata<-matrix(as.numeric(unlist(NYPDdata)),nrow=nrow(NYPDdata))
+colnames(NYPDdata) <- c("ID", "BOROUGH")
+
+hist(NYPDdata[,"BOROUGH"])
+```
+
+With
+
+0 = UNSPECIFIED
+1 = BRONX
+2 = BROOKLYN
+3 = MANHATTAN
+4 = QUEENS
+5 = STATEN ISLAND
+
+The histogram shows that there are a lot of emtpy cells in the BOROUGH column. 
+
+When solving this question, we realize that in the rows with unknown value for Borough value, the zip code is also unknown. The only values regarding location that are partially available for these incidents On.Street.Name, Cross.Street.Name and Off.Street.Name. 
+
+To assess how many rows are complete the next step is to count how many empty values we have in the column Borough.
+
+```{r echo=FALSE}
+
+amountUNSPECIFIED <- length(NYPDfile$BOROUGH[NYPDfile$"BOROUGH"=="UNSPECIFIED"])
+amountUNSPECIFIED
+
+amountUNSPECIFIED_NOZIP <- length(NYPDfile$BOROUGH[NYPDfile$"BOROUGH"=="UNSPECIFIED" & NYPDfile$"ZIP.CODE"=="00000"])
+amountUNSPECIFIED_NOZIP
+
+
+```
+
+For the column ZIP code, we have the following amount of empty cells:
+```{r echo=FALSE}
+
+amount00000 <- length(NYPDfile$ZIP.CODE[NYPDfile$"ZIP.CODE"=="00000"])
+amount00000
+
+```
+The difference between the 2 values is not significant. We are assuming that always both of the cells are empty. (In this case, the difference between the # of empty ZIP.CODEs and BOROUGHs is only 5 values, so we assume that we have a ZIP.CODE value for every row that has a BOROUGH value.)
+
+In total, the percentage of unknown borough/ZIP code values is small enough to allow a sensible analysis:
+
+```{r echo=FALSE}
+
+amountUNSPECIFIED/(nrow(NYPDfile))*100
+
+```
+Percent of the data does not include values for the columns ZIP.CODE AND BOROUGH.  
+
+In absolute terms we have a very large sample that we can analyze, containing over 712 652 accidents  (this tranlates into ~13200 accidents per month). For this analysis we will focus on our sample of completed rows including BOROUGH and ZIP.CODE data. Therefore,we will exclude all rows with missing ZIP.CODES or BOROUGH values. At a later stage, we could discuss if we scale the existing data to reflect the total # of accident per year. For now, we will focus on the *relative* danger of the ZIP codes/boroughs.For this purpose, we will exclude the rows that do not have Borough/ZIP code information.
+
+## Dataset visualization
+
+1. We will now plot a graph with accidents per borough (independent of time and date):
+
+```{r}
+
+NYPDdata_knownBorough <- NYPDdata[-c(0),]
+#NYPDdata_knownBorough <- subset(NYPDdata,"BOROUGH"!=0)
+
+NYPDfile$BOROUGH[NYPDfile$BOROUGH == ""] <- "UNSPECIFIED"
+NYPDfile$ZIP.CODE[is.na(NYPDfile$ZIP.CODE)] <- "00000"
+
+
+#histogram
+
+NYPDdata <- NYPDfile$UNIQUE.KEY
+NYPDdata <- cbind(NYPDdata, NYPDfile$BOROUGH)
+colnames(NYPDdata) <- c("ID", "BOROUGH")
+
+#NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="UNSPECIFIED", 0)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="BRONX", 1)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="BROOKLYN", 2)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="MANHATTAN", 3)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="QUEENS", 4)
+NYPDdata[,"BOROUGH"] <- replace(NYPDdata[,"BOROUGH"], NYPDdata[,"BOROUGH"]=="STATEN ISLAND", 5)
+
+NYPDdata<-matrix(as.numeric(unlist(NYPDdata)),nrow=nrow(NYPDdata))
+colnames(NYPDdata) <- c("ID", "BOROUGH")
+
+hist(NYPDdata[,"BOROUGH"])
+
+```
+
+
+With
+
+1 = BRONX
+2 = BROOKLYN
+3 = MANHATTAN
+4 = QUEENS
+5 = STATEN ISLAND
+
+*According to our sample, the boroughs with the highest number of accidents are Brooklyn and Queens.* 
+
+2. Generate tables with accidents per borough / per type of victim (cyclist / Pedestrian / Motorist):
+
+a. Total number of people killed by BOROUGH (Cyclists+Pededstrians+Motorists)
+b. Total number of people injured by BOROUGH (Cyclists+Pededstrians+Motorists)
+c. Number of cyclists killed by BOROUGH
+d. Number of cyclists injured by BOROUGH
+e. Number of pedestrians killed by BOROUGH
+f. Number of pedestrians injured by BOROUGH
+g. Number of Motorists killed by BOROUGH
+h. Number of Motorists injured by BOROUGH
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+
+
+PERSONS.K <- aggregate(NYPDfile$NUMBER.OF.PERSONS.KILLED, list(Borough = NYPDfile$BOROUGH), sum)
+PERSONS.I <- aggregate(NYPDfile$NUMBER.OF.PERSONS.INJURED, list(Borough = NYPDfile$BOROUGH), sum)
+CYCLISTS.K <- aggregate(NYPDfile$NUMBER.OF.CYCLIST.KILLED, list(Borough = NYPDfile$BOROUGH), sum)
+CYCLISTS.I <- aggregate(NYPDfile$NUMBER.OF.CYCLIST.INJURED, list(Borough = NYPDfile$BOROUGH), sum)
+PED.K <- aggregate(NYPDfile$NUMBER.OF.PEDESTRIANS.KILLED, list(Borough = NYPDfile$BOROUGH), sum)
+PED.I <- aggregate(NYPDfile$NUMBER.OF.PEDESTRIANS.INJURED, list(Borough = NYPDfile$BOROUGH), sum)
+MOT.K <- aggregate(NYPDfile$NUMBER.OF.MOTORIST.KILLED, list(Borough = NYPDfile$BOROUGH), sum)
+MOT.I <- aggregate(NYPDfile$NUMBER.OF.MOTORIST.INJURED, list(Borough = NYPDfile$BOROUGH), sum)
+
+
+PERSONS.K
+PERSONS.I
+CYCLISTS.K
+CYCLISTS.I
+PED.K
+PED.I
+MOT.K
+MOT.I
+
+
+
+
+##NYPDdata<-matrix(as.numeric(unlist(NYPDdata)),nrow=nrow(NYPDdata))
+##colnames(NYPDdata) <- c("ID", "BOROUGH")
+
+##hist(NYPDdata[,"BOROUGH"])
+```
+
+From this data we can draw the following conclusions:
+a. Brooklyn and Queens have the largest amount of deaths and injures (in total)
+b. However, there are more cyclists injured in Manhattan than in Queens (maybe people cycle more in Manhattan than in Queens)
+c. Similarly, there are more pedestrians injured in Manhattan than in queens (maybe people like walking a lot more in Manhattan - makes sense!)
+d. For motorists, Brooklyn, Queens and Bronx have the largest amount of deaths and injuries (Makes sense as in Manhattan cars can't go very fast) 
+
+3. Generate a histogram with the type of vehicle that was involved in the accident:
+
+```{r , echo=TRUE, message=FALSE, warning=FALSE}
+
+
+NYPDfile$VEHICLE.TYPE.CODE.1[NYPDfile$VEHICLE.TYPE.CODE.1 == ""] <- "0000"
+
+#histogram
+
+NYPDdata1 <- NYPDfile$UNIQUE.KEY
+NYPDdata1 <- cbind(NYPDdata1, NYPDfile$VEHICLE.TYPE.CODE.1)
+colnames(NYPDdata1) <- c("ID", "VEHICLE")
+
+#NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="0000", 0)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="PASSENGER VEHICLE", 1)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="SPORT UTILITY / STATION WAGON", 2)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="TAXI", 3)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="MOTORCYCLE", 4)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="PICK-UP TRUCK", 5)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="OTHER", 6)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="VAN", 7)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="BICYCLE", 8)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="SMALL COM VEH(4 TIRES)", 9)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="AMBULANCE", 10)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="LARGE COM VEH(6 OR MORE TIRES)", 11)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="UNKNOWN", 12)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="LIVERY VEHICLE", 13)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="BUS", 14)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="SCOOTER", 15)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="FIRE TRUCK", 16)
+NYPDdata1[,"VEHICLE"] <- replace(NYPDdata1[,"VEHICLE"], NYPDdata1[,"VEHICLE"]=="PEDICAB", 17)
+
+NYPDdata1<-matrix(as.numeric(unlist(NYPDdata1)),nrow=nrow(NYPDdata1))
+colnames(NYPDdata1) <- c("ID", "VEHICLE")
+
+hist(NYPDdata1[,"VEHICLE"])
+```
+
+Where:
+1 PASSENGER VEHICLE
+2 SPORT UTILITY / STATION WAGON
+3 TAXI
+4 MOTORCYCLE
+5 PICK-UP TRUCK
+6 OTHER
+7 VAN
+8 BICYCLE
+9 SMALL COM VEH(4 TIRES)
+10 AMBULANCE
+11 LARGE COM VEH(6 OR MORE TIRES)
+12 UNKNOWN
+13 LIVERY VEHICLE
+14 BUS
+15 SCOOTER
+16 FIRE TRUCK
+17 PEDICAB 
+
+From our new histogram, we can conclude that passanger vehicles and sport utilities are the ones involved with the highest # of accidents.
+
+## 4. Define Business Criteria
+
+In an attempt to create a "traffic light" system for the zip codes in New York we decided to rate every accident using the following criteria:
++ Every row is a collision and receives 1 point
++ Every injury the row receives 10 points (# of injuries in the row * 3) - Column name do be used: 11. NUMBER.OF.PERSONS.INJURED    
++ Every death the row receives 1000 points - Column name to be used: 12. NUMBER.OF.PERSONS.KILLED 
+
+A new column with the above point system will be created and called ("URS" = Universal Rating System (for accidents))
+
+```{r}
+
+NYPDfile$URS <- NYPDfile$NUMBER.OF.PERSONS.KILLED*2000+NYPDfile$NUMBER.OF.PERSONS.INJURED*10+1
+
+```
+
+A. Here is a simple table of URS per borough
+
+```{r}
+
+aggregate(NYPDfile$URS, list(Borough = NYPDfile$BOROUGH), sum)
+
+
+```
+
+From this table, we can see that in our sample, Brooklyn is the most dangerous borough according to the URS scale. 
+
+We can also assess the average URS of an accident per borough: 
+
+```{r}
+
+aggregate(NYPDfile$URS, list(Borough = NYPDfile$BOROUGH), mean)
+
+
+```
+From this table we can see that in our sample, on average, the accidents that happen in the Bronx are the most dangerous ones (URS=6.33). In comparison, the accidents that happen in Manhattan are much less dangerous (only URS=4.32)
+
+This is interesting: The Unspecified accidents have the highest URS index, therefore we can infer, as a hypothesis, that many of the most dangerous accidents are not properly classified. Maybe because the police men are worried with the outcome, emergencies, etc... 
+
+Brooklyn is the most dangerous borough and Bronx has the second highest URS, although it was forth in the number of accidents. This suggests that people drive faster or more agressively in the Bronx.
+
+# 5. Prepare and model solution
+
+For our primary analysis, we will focus on the following data
+
++ order NY by ZIP codes
+analyse the following criteria
++ URS
++ Amount of Accidents
++ Amount of injuries and deaths (Total, Pedestrians, Cyclists)
+
+We start with simple tables (independent of time and date and ordered from largest # of accidents to smallest): 
+*note: only Table heads are displayed to reduce the length of the report*
+
+a. Accidents per zip code
+b. Deaths per zip code
+c. Injuries per zip code
+
+```{r}
+
+PERSONS.K.Z <- aggregate(NYPDfile$NUMBER.OF.PERSONS.KILLED, list(ZIP.CODE = NYPDfile$ZIP.CODE), sum)
+PERSONS.I.Z <- aggregate(NYPDfile$NUMBER.OF.PERSONS.INJURED, list(ZIP.CODE = NYPDfile$ZIP.CODE), sum)
+CYCLISTS.K.Z <- aggregate(NYPDfile$NUMBER.OF.CYCLIST.KILLED, list(ZIP.CODE = NYPDfile$ZIP.CODE), sum)
+CYCLISTS.I.Z <- aggregate(NYPDfile$NUMBER.OF.CYCLIST.INJURED, list(ZIP.CODE = NYPDfile$ZIP.CODE), sum)
+PED.K.Z <- aggregate(NYPDfile$NUMBER.OF.PEDESTRIANS.KILLED, list(ZIP.CODE = NYPDfile$ZIP.CODE), sum)
+PED.I.Z <- aggregate(NYPDfile$NUMBER.OF.PEDESTRIANS.INJURED, list(ZIP.CODE = NYPDfile$ZIP.CODE), sum)
+URS.Z <- aggregate(NYPDfile$URS, list(ZIP.CODE = NYPDfile$ZIP.CODE), sum)
+
+
+
+
+# ordering the data to display most dangerous ZIP codes first
+
+URS.Z_nb = c(URS.Z$ZIP.CODE,URS.Z$x)
+URS.Z_nb =as.vector(t(URS.Z))
+URS.Z_nb =as.vector(as.matrix(URS.Z))
+URS.Z.ord <- URS.Z[order(-URS.Z[,"x"]),]
+
+
+
+
+PERSONS.K.Z_nb = c(PERSONS.K.Z$ZIP.CODE,PERSONS.K.Z$x)
+PERSONS.K.Z_nb =as.vector(t(PERSONS.K.Z))
+PERSONS.K.Z_nb =as.vector(as.matrix(PERSONS.K.Z))
+PERSONS.K.Z.ord <- PERSONS.K.Z[order(-PERSONS.K.Z[,"x"]),]
+
+PERSONS.I.Z_nb = c(PERSONS.I.Z$ZIP.CODE,PERSONS.I.Z$x)
+PERSONS.I.Z_nb =as.vector(t(PERSONS.I.Z))
+PERSONS.I.Z_nb =as.vector(as.matrix(PERSONS.I.Z))
+PERSONS.I.Z.ord <- PERSONS.I.Z[order(-PERSONS.I.Z[,"x"]),]
+
+CYCLISTS.K.Z_nb = c(CYCLISTS.K.Z$ZIP.CODE,CYCLISTS.K.Z$x)
+CYCLISTS.K.Z_nb =as.vector(t(CYCLISTS.K.Z))
+CYCLISTS.K.Z_nb =as.vector(as.matrix(CYCLISTS.K.Z))
+CYCLISTS.K.Z.ord <- CYCLISTS.K.Z[order(-CYCLISTS.K.Z[,"x"]),]
+
+CYCLISTS.I.Z_nb = c(CYCLISTS.I.Z$ZIP.CODE,CYCLISTS.I.Z$x)
+CYCLISTS.I.Z_nb =as.vector(t(CYCLISTS.I.Z))
+CYCLISTS.I.Z_nb =as.vector(as.matrix(CYCLISTS.I.Z))
+CYCLISTS.I.Z.ord <- CYCLISTS.K.Z[order(-CYCLISTS.I.Z[,"x"]),]
+
+PED.K.Z_nb = c(PED.K.Z$ZIP.CODE,PED.K.Z$x)
+PED.K.Z_nb =as.vector(t(PED.K.Z))
+PED.K.Z_nb =as.vector(as.matrix(PED.K.Z))
+PED.K.Z.ord <- PED.K.Z[order(-PED.K.Z[,"x"]),]
+
+PED.I.Z_nb = c(PED.I.Z$ZIP.CODE,PED.I.Z$x)
+PED.I.Z_nb =as.vector(t(PED.K.Z))
+PED.I.Z_nb =as.vector(as.matrix(PED.I.Z))
+PED.I.Z.ord <- PED.I.Z[order(-PED.I.Z[,"x"]),]
+```
+
+These are the most dangerous ZIP codes by URS (ignore 00000 as this is not actual ZIP):
+
+```{r}
+head(URS.Z.ord)
+```
+
+These are the most dangerous ZIP codes by total deaths in traffic accidents (ignore 00000 as this is not actual ZIP):
+
+```{r}
+head(PERSONS.K.Z.ord)
+```
+We can see that 11236 ZIP.CODE (Canarsie) has the highest number of accidents which result in death. Its positioned in the outskirts of NYC in Brooklyn.
+
+
+These are the most dangerous ZIP codes by total injuries in traffic accidents (ignore 00000 as this is not actual ZIP):
+
+```{r}
+head(PERSONS.I.Z.ord)
+```
+
+These are the most dangerous ZIP codes by cyclist deaths or injuries in traffic accidents (ignore 00000 as this is not actual ZIP):
+
+```{r}
+head(CYCLISTS.K.Z.ord)
+head(CYCLISTS.I.Z.ord)
+```
+
+These are the most dangerous ZIP codes by cyclist deaths or injuries in traffic accidents (ignore 00000 as this is not actual ZIP):
+
+```{r}
+head(PED.K.Z.ord)
+head(PED.I.Z.ord)
+```
+
+# We will plot some of the data
+
+```{r}
+URS.Z.ord <- subset(URS.Z.ord, ZIP.CODE!="00000")
+bp <- barplot(URS.Z.ord[,"x"], ylab="", xlab="", names.arg=as.character(URS.Z.ord[,"ZIP.CODE"]), main="URS by zip code") 
+```
+
+```{r}
+PERSONS.K.Z.ord <- subset(PERSONS.K.Z.ord, ZIP.CODE!="00000")
+bp <- barplot(PERSONS.K.Z.ord[,"x"], ylab="", xlab="",names.arg=as.character(PERSONS.K.Z.ord[,"ZIP.CODE"]), main="Persons killed by zip code") 
+```
+
+```{r}
+
+PERSONS.I.Z.ord <- subset(PERSONS.I.Z.ord, ZIP.CODE!="00000")
+bp <- barplot(PERSONS.I.Z.ord[,"x"], ylab="", xlab="",names.arg=as.character(PERSONS.I.Z.ord[,"ZIP.CODE"]), main="Persons injured by zip code") 
+
+```
+
+## 6. Summarize findings and define next steps.
+
+Our key findings were
+
+1. Brooklyn is the most dangerous borough re. traffic. Within Brooklyn, Canarsie (ZIP 11236) is the most dangerous area measured by deaths in traffic accidents. Measured by URS, East New York (ZIP 11207) is even more dangerous. Both areas lie next to each other 
+
+2. In our sample, on average, the accidents that happen in the Bronx are the most dangerous ones (URS=6.33). In comparison, the accidents that happen in Manhattan are much less dangerous (only URS=4.32). Our hypothesis (explained above and to be further investigated) is that people drive faster or more agressively in the Bronx
+
+3. Further information including details for cyclists, motorists and pedestrians can be seen in the tables above 
+
+4. We recommend the following next steps 
++ As ~1/4 of the data lacked information about the borough/ZIP code, we recommend to fill the gaps, e.g., combining the street names with google maps information
++ We would also recommend the NY Police Department to see which data is missing and improve the processes to increase transparency / improve their records.Interestingly, the Unspecified accidents have the highest URS index, therefore we can infer, as a hypothesis, that many of the most dangerous accidents are not properly classified. Maybe because the police men are worried with the outcome, emergencies, etc…
++ Date/Time information should be converted into numerical values and analyzed to determine the most dangerous times for traffic and combine this and the geographical information. 
++ We recommend to use the findings analysis when, e.g., chosing between 2 areas to live or visit in in NY with otherwise equal qualities
+
+***
